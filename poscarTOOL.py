@@ -310,8 +310,8 @@ class POSCARConvert():
         self.Vector_a1_modified, self.Vector_a2_modified, self.Vector_a3_modified = Shifted_Vector_a1, Shifted_Vector_a2, Shifted_Vector_a3
         self.AtomPos_modified = Shifted_AtomPos
 
-    #TODO: Not finished, still worling......
-    def RepeatCell_z(self, repZ, vdwGap=6.68915):
+    #TODO: Not finished, still working......
+    def RepeatCell_z(self, repZ, repeatGap):
         try:
             Vector_a1, Vector_a2, Vector_a3 = self.Vector_a1_modified, self.Vector_a2_modified, self.Vector_a3_modified
             AtomPos = self.AtomPos_modified
@@ -324,7 +324,7 @@ class POSCARConvert():
                                     Vector_a3]
                                     )
         Cart_AtomPos = AtomPos@Frac_Car_Matrix
-
+        
     def WritePOSCAR(self, outPath, atomTypes, atomNums):
         Vector_a1, Vector_a2, Vector_a3 = self.Vector_a1_modified, self.Vector_a2_modified, self.Vector_a3_modified
         AtomPos = self.AtomPos_modified
