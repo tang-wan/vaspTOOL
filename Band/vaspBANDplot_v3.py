@@ -23,6 +23,13 @@ class procarBNADplot():
 
         self.nband   = self.parser.ebs.nbands
         self.nkpoint = self.parser.ebs.nkpoints
+        self.table = """
++-------+-----+------+------+------+------+------+------+------+------+
+|n-lm   |  0  |   1  |  2   |   3  |   4  |   5  |   6  |   7  |   8  |
++=======+=====+======+======+======+======+======+======+======+======+
+|-1(tot)|  s  |  py  |  pz  |  px  | dxy  | dyz  | dz2  | dxz  |x2-y2 |
++-------+-----+------+------+------+------+------+------+------+------+
+"""
 # ==========
     def Read_AllData_Band(self):
         
@@ -46,10 +53,8 @@ class procarBNADplot():
 
         Tools.Process_Word("# >>>>>>>>>> Band <<<<<<<<<< #")
         print("# ==========")
-        print("(kpoints, bands, total)")
+        print("(bands, kpoints)")
         print(np.shape(bandData))
-        print("# ==========")
-        print(np.shape(kpathData))
 
         BANDoutput  = (kpathData, bandData)
         LABELoutput = (HighSymmPoint_label, HighSymmPoint_ticks)
@@ -71,9 +76,9 @@ class procarBNADplot():
         self.norbitals = self.parser.ebs.norbitals
         self.nspins    = self.parser.ebs.nspins
         
-        self.atomData    = np.transpose(projData[:,:,:,:,0].sum(axis=3))
-        self.orbitalData = np.transpose(projData.sum(axis=(2, 4)))
-        self.spinData    = np.transpose(projData.sum(axis=(2, 3)))
+        # self.atomData    = np.transpose(projData[:,:,:,:,0].sum(axis=3))
+        # self.orbitalData = np.transpose(projData.sum(axis=(2, 4)))
+        # self.spinData    = np.transpose(projData.sum(axis=(2, 3)))
 
         Tools.Check_out_Word("#>>>>> Read project band data <<<<<#")
         Tools.Process_Word("# =====")
@@ -89,14 +94,16 @@ class procarBNADplot():
         elif self.nspins == 2:
             print(f"[0 => spin up; 1 => spin down]")
 
-        PROJoutput = (self.atomData, self.orbitalData, self.spinData)
+        # PROJoutput = (self.atomData, self.orbitalData, self.spinData)
 
-        return PROJoutput
+        # return PROJoutput
 # ==========    
-    def Read_SpinData_projectionData(self):
-        projData  = self.parser.ebs.projected[:,:,:,0,:,:]
-        spinData  = np.transpose(projData.sum(axis=(2, 3)))
-        print(np.shape(spinData))
+    def Read_SpinData_projectionData(self, spinList=(0,)):
+        spinData = self.parser.ebs.ebs_sum(atoms=None, 
+                                        orbitals=None, 
+                                           spins=spinList
+                                           )
+        spinData = np.transpose(spinData)
         kwargs_spin = dict(
             s=50,
             marker='.',
@@ -107,11 +114,12 @@ class procarBNADplot():
         )
         return spinData, kwargs_spin
 # ==========    
-    def Read_OrbitalData_projectionData(self, ):
-        projData  = self.parser.ebs.projected[:,:,:,0,:,:]
-        orbitalData = np.transpose(projData[:,:,:,:,0].sum(axis=2)) # Sum over atoms
-        # projData  = self.parser.ebs.projected[:,:,:,0,:,0]
-        # orbitalData = np.transpose(projData.sum(axis=(2, 4)))
+    def Read_OrbitalData_projectionData(self, orbitalList=None, table=0):
+        orbitalData = self.parser.ebs.ebs_sum(atoms=None, 
+                                           orbitals=orbitalList, 
+                                              spins=(0,)
+                                              )
+        orbitalData = np.transpose(orbitalData)
         kwargs_orbital = dict(
             s=50,
             marker='.',
@@ -120,12 +128,15 @@ class procarBNADplot():
             alpha=1.0,
             edgecolor='none',
         )
+        if table:
+            print(self.table)
         return orbitalData, kwargs_orbital
 # ==========    
-    def Read_AtomData_projectionData(self, AtomList:list):
-        projData = self.parser.ebs.projected[:,:,:,0,:,:]
-        atomData = projData[:,:,:,:,0].sum(axis=3) # Sum over orbitals
-        atomData = atomData[:,:,AtomList].sum(axis=2, keepdims=True)
+    def Read_AtomData_projectionData(self, atomList=None):
+        atomData = self.parser.ebs.ebs_sum(atoms=atomList, 
+                                        orbitals=None, 
+                                           spins=(0,)
+                                           )
         atomData = np.transpose(atomData)
         kwargs_orbital = dict(
             s=50,
@@ -137,19 +148,18 @@ class procarBNADplot():
         )
         return atomData, kwargs_orbital
 # ==========    
-    def Read_AtomCompData_projectionData(self, AtomList1:list, AtomList2:list, type="1-2"):
-        projData = self.parser.ebs.projected[:,:,:,0,:,:]
-        
-        atomData1 = projData[:,:,:,:,0].sum(axis=3)[:,:,AtomList1].sum(axis=2, keepdims=True)
-        atomData2 = projData[:,:,:,:,0].sum(axis=3)[:,:,AtomList2].sum(axis=2, keepdims=True)
+    def Read_AtomCompData_projectionData(self, atomList1:list, atomList2:list, type="1-2"):
+        atomData1 = self.parser.ebs.ebs_sum(atoms=atomList1, orbitals=None, spins=(0,))
+        atomData2 = self.parser.ebs.ebs_sum(atoms=atomList2, orbitals=None, spins=(0,))
         
         match type:
             case "1-2":
-                atomData = np.transpose(atomData1-atomData2)
+                atomData = atomData1-atomData2
             case "2-1":
-                atomData = np.transpose(atomData2-atomData1)
+                atomData = atomData2-atomData1
             case _:
                 Tools.Check_out_Word("No this kind of type")
+        atomData = np.transpose(atomData)
 
         kwargs_atomcomp = dict(
             s=50,
@@ -162,20 +172,46 @@ class procarBNADplot():
               
         return atomData, kwargs_atomcomp
 # ==========
-    def Plot_projectTools(self, PlotData, kwargs_plot1:dict, kwargs_plot2:dict, Setting:tuple, boundary:tuple):
+    def Read_Custom_projectionData(self, atomList=None, orbitalList=None, spinList=(0,)):
+        projData = self.parser.ebs.ebs_sum(atoms=atomList, 
+                                        orbitals=orbitalList, 
+                                           spins=spinList
+                                           )
+        projData = np.transpose(projData)
+        kwargs_spin = dict(
+            s=50,
+            marker='.',
+            cmap='seismic',
+            norm=colors.Normalize(-0.5, 0.5),
+            alpha=1.0,
+            edgecolor='none',
+        )
+        kwargs_other = dict(
+            s=50,
+            marker='.',
+            cmap='Blues',
+            norm=colors.Normalize(0, 1),
+            alpha=1.0,
+            edgecolor='none',
+        )
+        return projData, (kwargs_spin, kwargs_other)
+# ==========
+    def Plot_projectTools(self, PlotData, kwargs_plot1:dict, kwargs_plot2:dict, Title:str, boundary:tuple):
         K_path, B_data = self.kpathData, np.transpose(self.bandData)
+        PlotData = PlotData[0]
+
         L_ticks = self.HighSymmPoint_ticks
         L_label = self.HighSymmPoint_label
-
+        
         plt.figure(figsize=(5, 4))
-        plt.title(Setting[0])
+        plt.title(Title)
         for i in range(self.nband):
             plt.plot(K_path, B_data[i],
                     **kwargs_plot1
                     )
             plt.scatter(
                     K_path, B_data[i],
-                    c=PlotData[Setting[1]][i],
+                    c=PlotData[i],
                     **kwargs_plot2
                 )
             
