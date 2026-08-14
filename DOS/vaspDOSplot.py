@@ -80,10 +80,10 @@ class procarDOSplot():
             print(f"There are {nspins} spins in this data")
             print(self.table)
 
-        if nspins == 4:
-            print(f"[0 => Total DOS; 1 => Sx; 2 => Sy; 3 => Sz]")
-        elif nspins == 2:
-            print(f"[0 => spin up; 1 => spin down]")
+            if nspins == 4:
+                print(f"[0 => Total DOS; 1 => Sx; 2 => Sy; 3 => Sz]")
+            elif nspins == 2:
+                print(f"[0 => spin up; 1 => spin down]")
 
         projData = parser.dos_sum(atoms=atomList, orbitals=orbitList, spins=spinsList)
         DOSoutput = (Edata, projData)

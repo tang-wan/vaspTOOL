@@ -1,1 +1,1 @@
-from .vaspBANDplot_v3 import *
+from .vaspBANDplot_v4 import *

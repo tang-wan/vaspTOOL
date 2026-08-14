@@ -209,12 +209,19 @@ class procarBNADplot():
         plt.figure(figsize=(5, 4))
         plt.title(Title)
         for i in range(self.nband):
+            dB = np.abs(B_data[i]-B_data[i-1])
+            dBBool = np.all(dB<1e-2)
+            if dBBool:
+                # print(i-1, i)
+                proj = PlotData[i] + PlotData[i-1]
+            else:
+                proj =  PlotData[i]
             plt.plot(K_path, B_data[i],
                     **kwargs_plot1
                     )
             plt.scatter(
                     K_path, B_data[i],
-                    c=PlotData[i],
+                    c=proj,
                     **kwargs_plot2
                 )
             
