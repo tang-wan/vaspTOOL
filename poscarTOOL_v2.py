@@ -11,7 +11,7 @@ def _Info_POSCARRead():
     print("We have the following methods:")
     methodList = ("LayerHeight", "AtomDistance", "AtomAngle")
     for name in methodList:
-        print(f"    {name}") 
+        pw(f"    {name}") 
     print("=====") 
 # -----
 class POSCARRead():
