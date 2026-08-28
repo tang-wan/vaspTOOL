@@ -1,4 +1,4 @@
-from .poscarTOOL import *
+from .poscarTOOL_v2 import *
 # =====
 from .SpinTexture import *
 from .Band import *
