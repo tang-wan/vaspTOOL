@@ -152,13 +152,20 @@ class procarBNADplot():
         atomData1 = self.parser.ebs.ebs_sum(atoms=atomList1, orbitals=None, spins=(0,))
         atomData2 = self.parser.ebs.ebs_sum(atoms=atomList2, orbitals=None, spins=(0,))
         
-        match type:
-            case "1-2":
-                atomData = atomData1-atomData2
-            case "2-1":
-                atomData = atomData2-atomData1
-            case _:
-                Tools.Check_out_Word("No this kind of type")
+        # match type:
+        #     case "1-2":
+        #         atomData = atomData1-atomData2
+        #     case "2-1":
+        #         atomData = atomData2-atomData1
+        #     case _:
+        #         Tools.Check_out_Word("No this kind of type")
+        if type == "1-2":
+            atomData = atomData1 - atomData2
+        elif type == "2-1":
+            atomData = atomData2 - atomData1
+        else:
+            Tools.Check_out_Word("No this kind of type")
+
         atomData = np.transpose(atomData)
 
         kwargs_atomcomp = dict(
@@ -198,7 +205,8 @@ class procarBNADplot():
 # ==========
     def Plot_projectTools(self, PlotData, kwargs_plot1:dict, kwargs_plot2:dict, Title:str, 
                           yboundary:tuple, 
-                          xboundary: tuple | None = None
+                        #   xboundary: tuple | None = None
+                          xboundary=None
                           ):
         K_path, B_data = self.kpathData, np.transpose(self.bandData)
         PlotData = PlotData[0]
