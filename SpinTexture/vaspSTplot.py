@@ -242,13 +242,19 @@ class procarSTplot():
         OriginalData1 = OriginalData1.sum(axis=2, keepdims=True)
         OriginalData2 = OriginalData2.sum(axis=2, keepdims=True)
 
-        match type:
-            case "1-2":
-                OriginalData = OriginalData1-OriginalData2
-            case "2-1":
-                OriginalData = OriginalData2-OriginalData1
-            case _:
-                Tools.Check_out_Word("No this kind of type")
+        # match type:
+        #     case "1-2":
+        #         OriginalData = OriginalData1-OriginalData2
+        #     case "2-1":
+        #         OriginalData = OriginalData2-OriginalData1
+        #     case _:
+        #         Tools.Check_out_Word("No this kind of type")
+        if type == "1-2":
+            OriginalData = OriginalData1 - OriginalData2
+        elif type == "2-1":
+            OriginalData = OriginalData2 - OriginalData1
+        else:
+            Tools.Check_out_Word("No this kind of type")
         # ==========
         interpData = self._interpolation_projectTools(OriginalData)
         kwargs_atomcomp = dict(
