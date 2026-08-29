@@ -346,57 +346,102 @@ if __name__ == '__main__':
 
         projData = examp.Read_projectData()
         # -----
-        match plotType:
-            case "spin":
-                projspinData, kwargs_plot2 = examp.Edit_interpolation_projectSpin()
-                # ---------------
-                match protype:
-                    case "sx":
-                        examp.Plot_projectTools(projspinData, kwargs_plot1, kwargs_plot2, ("Spin_Sx", 1))
-                    case "sy":
-                        examp.Plot_projectTools(projspinData, kwargs_plot1, kwargs_plot2, ("Spin_Sy", 2))
-                    case "sz":
-                        examp.Plot_projectTools(projspinData, kwargs_plot1, kwargs_plot2, ("Spin_Sz", 3))
-                    case _:
-                        print("No this kind of spin !!!!!")
+        # match plotType:
+        #     case "spin":
+        #         projspinData, kwargs_plot2 = examp.Edit_interpolation_projectSpin()
+        #         # ---------------
+        #         match protype:
+        #             case "sx":
+        #                 examp.Plot_projectTools(projspinData, kwargs_plot1, kwargs_plot2, ("Spin_Sx", 1))
+        #             case "sy":
+        #                 examp.Plot_projectTools(projspinData, kwargs_plot1, kwargs_plot2, ("Spin_Sy", 2))
+        #             case "sz":
+        #                 examp.Plot_projectTools(projspinData, kwargs_plot1, kwargs_plot2, ("Spin_Sz", 3))
+        #             case _:
+        #                 print("No this kind of spin !!!!!")
 
-            case "Orbital":
-                projOrbitalData, kwargs_plot2 = examp.Edit_interpolation_projectOrbital()
-                # ---------------
-                match protype:
-                    case "s":
-                        examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_s", 0))
-                    case "px":
-                        examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_px", 1))
-                    case "py":
-                        examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_py", 2))
-                    case "pz":
-                        examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_pz", 3))
-                    case _:
-                        print("No this kind of spin or it is out of setting !!!!!")
+        #     case "Orbital":
+        #         projOrbitalData, kwargs_plot2 = examp.Edit_interpolation_projectOrbital()
+        #         # ---------------
+        #         match protype:
+        #             case "s":
+        #                 examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_s", 0))
+        #             case "px":
+        #                 examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_px", 1))
+        #             case "py":
+        #                 examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_py", 2))
+        #             case "pz":
+        #                 examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_pz", 3))
+        #             case _:
+        #                 print("No this kind of spin or it is out of setting !!!!!")
 
-            case "Atom":
-                # projAtomData, kwargs_plot2 = examp.Edit_interpolation_projectAtom(AtomList=[0, 1, 2, 3, 4, 5, 6])
-                # ---------------
-                match protype:
-                    case "FM":
-                        projAtomData, kwargs_plot2 = examp.Edit_interpolation_projectAtom(AtomList=[0, 1, 2, 3, 4, 5, 6])
-                        examp.Plot_projectTools(projAtomData, kwargs_plot1, kwargs_plot2, ("FM", 0))
-                    case "TMD":
-                        projAtomData, kwargs_plot2 = examp.Edit_interpolation_projectAtom(AtomList=[7, 8, 9])
-                        examp.Plot_projectTools(projAtomData, kwargs_plot1, kwargs_plot2, ("TMD", 0))
+        #     case "Atom":
+        #         # projAtomData, kwargs_plot2 = examp.Edit_interpolation_projectAtom(AtomList=[0, 1, 2, 3, 4, 5, 6])
+        #         # ---------------
+        #         match protype:
+        #             case "FM":
+        #                 projAtomData, kwargs_plot2 = examp.Edit_interpolation_projectAtom(AtomList=[0, 1, 2, 3, 4, 5, 6])
+        #                 examp.Plot_projectTools(projAtomData, kwargs_plot1, kwargs_plot2, ("FM", 0))
+        #             case "TMD":
+        #                 projAtomData, kwargs_plot2 = examp.Edit_interpolation_projectAtom(AtomList=[7, 8, 9])
+        #                 examp.Plot_projectTools(projAtomData, kwargs_plot1, kwargs_plot2, ("TMD", 0))
 
-            case "Atom_comp":
-                projAtomCompData, kwargs_plot2 = examp.Edit_interpolation_projectAtom_comp(AtomList1=[0, 1, 2, 3, 4, 5, 6], 
-                                                                                           AtomList2=[7, 8, 9],
-                                                                                           type=protype)
-                # ---------------
-                match protype:
-                    case "1-2":
-                        examp.Plot_projectTools(projAtomCompData, kwargs_plot1, kwargs_plot2, ("FM-TMD", 0))
-                    case "2-1":
-                        examp.Plot_projectTools(projAtomCompData, kwargs_plot1, kwargs_plot2, ("TMD-FM", 0))
+        #     case "Atom_comp":
+        #         projAtomCompData, kwargs_plot2 = examp.Edit_interpolation_projectAtom_comp(AtomList1=[0, 1, 2, 3, 4, 5, 6], 
+        #                                                                                    AtomList2=[7, 8, 9],
+        #                                                                                    type=protype)
+        #         # ---------------
+        #         match protype:
+        #             case "1-2":
+        #                 examp.Plot_projectTools(projAtomCompData, kwargs_plot1, kwargs_plot2, ("FM-TMD", 0))
+        #             case "2-1":
+        #                 examp.Plot_projectTools(projAtomCompData, kwargs_plot1, kwargs_plot2, ("TMD-FM", 0))
+        if plotType == "spin":
+            projspinData, kwargs_plot2 = examp.Edit_interpolation_projectSpin()
+            # ---------------
+            if protype == "sx":
+                examp.Plot_projectTools(projspinData, kwargs_plot1, kwargs_plot2, ("Spin_Sx", 1))
+            elif protype == "sy":
+                examp.Plot_projectTools(projspinData, kwargs_plot1, kwargs_plot2, ("Spin_Sy", 2))
+            elif protype == "sz":
+                examp.Plot_projectTools(projspinData, kwargs_plot1, kwargs_plot2, ("Spin_Sz", 3))
+            else:
+                print("No this kind of spin !!!!!")
 
+        elif plotType == "Orbital":
+            projOrbitalData, kwargs_plot2 = examp.Edit_interpolation_projectOrbital()
+            # ---------------
+            if protype == "s":
+                examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_s", 0))
+            elif protype == "px":
+                examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_px", 1))
+            elif protype == "py":
+                examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_py", 2))
+            elif protype == "pz":
+                examp.Plot_projectTools(projOrbitalData, kwargs_plot1, kwargs_plot2, ("Orbital_pz", 3))
+            else:
+                print("No this kind of spin or it is out of setting !!!!!")
+
+        elif plotType == "Atom":
+            # projAtomData, kwargs_plot2 = examp.Edit_interpolation_projectAtom(AtomList=[0, 1, 2, 3, 4, 5, 6])
+            # ---------------
+            if protype == "FM":
+                projAtomData, kwargs_plot2 = examp.Edit_interpolation_projectAtom(AtomList=[0, 1, 2, 3, 4, 5, 6])
+                examp.Plot_projectTools(projAtomData, kwargs_plot1, kwargs_plot2, ("FM", 0))
+            elif protype == "TMD":
+                projAtomData, kwargs_plot2 = examp.Edit_interpolation_projectAtom(AtomList=[7, 8, 9])
+                examp.Plot_projectTools(projAtomData, kwargs_plot1, kwargs_plot2, ("TMD", 0))
+
+        elif plotType == "Atom_comp":
+            projAtomCompData, kwargs_plot2 = examp.Edit_interpolation_projectAtom_comp(AtomList1=[0, 1, 2, 3, 4, 5, 6], 
+                                                                                       AtomList2=[7, 8, 9],
+                                                                                       type=protype)
+            # ---------------
+            if protype == "1-2":
+                examp.Plot_projectTools(projAtomCompData, kwargs_plot1, kwargs_plot2, ("FM-TMD", 0))
+            elif protype == "2-1":
+                examp.Plot_projectTools(projAtomCompData, kwargs_plot1, kwargs_plot2, ("TMD-FM", 0))
+                
 # >>>>>>>>>> Runing <<<<<<<<<< #
     procarSTtest(plotType="spin", protype="sx")
     # procarSTtest(plotType="orbital", protype="pz")
