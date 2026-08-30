@@ -11,11 +11,13 @@ def _Info_():
     print("=====")
     print("We have the following methods:")
     methodList = ("Read_AllData_Band", 
+                  "Find_BandGap",
                   "Read_AllData_projectionData", 
                   "Read_SpinData_projectionData",
                   "Read_OrbitalData_projectionData",
                   "Read_AtomData_projectionData",
                   "Read_AtomCompData_projectionData",
+                  "Read_OrbitalCompData_projectionData",
                   "Read_Custom_projectionData",
                   )
     for name in methodList:
@@ -83,6 +85,25 @@ class procarBNADplot():
         )
 
         return BANDoutput, LABELoutput, kwargs_plot1
+# ==========    
+    def Find_BandGap(self):
+        B_data = np.transpose(self.bandData)
+        Cond_min = np.where(np.all(B_data>0, axis=1))
+        Cond_min = Cond_min[0]
+        Cond_min = np.min(Cond_min)
+        ConductionBand_min = np.min(B_data[Cond_min])
+        print("Conduction band minimum is:" , ConductionBand_min)
+
+        Val_max = np.where(np.all(B_data<0, axis=1))
+        Val_max = Val_max[0]
+        Val_max = np.max(Val_max)
+        ValenceBand_max = np.max(B_data[Val_max])
+        print("Valence band maximum is:" , ValenceBand_max)
+
+        BandGap = ConductionBand_min-ValenceBand_max
+        pw(str(BandGap))
+
+        return ValenceBand_max, ConductionBand_min, BandGap
 # ==========    
     def Read_AllData_projectionData(self):
         projData  = self.parser.ebs.projected[:,:,:,0,:,:]
@@ -194,6 +215,37 @@ class procarBNADplot():
         )
               
         return atomData, kwargs_atomcomp
+# ==========  
+    def Read_OrbitalCompData_projectionData(self, orbitList1:list, orbitList2:list, type="1-2"):
+        otbitData1 = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitList1, spins=(0,))
+        otbitData2 = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitList2, spins=(0,))
+        
+        # match type:
+        #     case "1-2":
+        #         atomData = atomData1-atomData2
+        #     case "2-1":
+        #         atomData = atomData2-atomData1
+        #     case _:
+        #         Tools.Check_out_Word("No this kind of type")
+        if type == "1-2":
+            otbitData = otbitData1 - otbitData2
+        elif type == "2-1":
+            otbitData = otbitData2 - otbitData1
+        else:
+            Tools.Check_out_Word("No this kind of type")
+
+        otbitData = np.transpose(otbitData)
+
+        kwargs_otbitcomp = dict(
+            s=50,
+            marker='.',
+            cmap='jet',
+            norm=colors.Normalize(-1, 1),
+            alpha=1.0,
+            edgecolor='none',
+        )
+              
+        return otbitData, kwargs_otbitcomp
 # ==========
     def Read_Custom_projectionData(self, atomList=None, orbitalList=None, spinList=(0,)):
         projData = self.parser.ebs.ebs_sum(atoms=atomList, 
