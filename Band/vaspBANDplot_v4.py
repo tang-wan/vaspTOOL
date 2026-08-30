@@ -2,9 +2,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import pyprocar as ppr
+from STT_Tool import Process_Word as pw
 
 from STT_Tool import Tools
 color = Tools.ColorList()
+# >>>>>>>>>> <<<<<<<<<<
+def _Info_():
+    print("=====")
+    print("We have the following methods:")
+    methodList = ("Read_AllData_Band", 
+                  "Read_AllData_projectionData", 
+                  "Read_SpinData_projectionData",
+                  "Read_OrbitalData_projectionData",
+                  "Read_AtomData_projectionData",
+                  "Read_AtomCompData_projectionData",
+                  "Read_Custom_projectionData",
+                  )
+    for name in methodList:
+        pw(f"    {name}") 
+    print("=====") 
 # >>>>>>>>>> <<<<<<<<<<
 class procarBNADplot():
     def __init__(self, FilePath:str, fermiEnergy=0, PROCARtype='vasp'):

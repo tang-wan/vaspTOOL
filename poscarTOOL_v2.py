@@ -192,11 +192,11 @@ class POSCAREdit():
         self.AtomPos_Cart = AtomPos_Cart
         self.AtomPos_Frac = AtomPos_Frac
 
-    def SetVacCen(self, Vac=15.0):
-        self.Struct.center(vacuum=Vac, axis=2)
+    def SetVacCen(self, Vac=15.0, axis=2):
+        self.Struct.center(vacuum=Vac, axis=axis)
 
-    def Centered(self):
-        self.Struct.center(axis=2)
+    def Centered(self, axis=2):
+        self.Struct.center(axis=axis)
 
     def SuperCell(self, repeatCell:tuple):
         self.Struct = self.Struct*repeatCell
