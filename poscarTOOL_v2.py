@@ -9,7 +9,12 @@ from itertools import groupby
 def _Info_POSCARRead():
     print("=====")
     print("We have the following methods:")
-    methodList = ("LayerHeight", "AtomDistance", "AtomAngle")
+    methodList = ("LayerHeight()", 
+                  "AtomDistance(TargetAtom_1, TargetAtom_2, p=(False, False))", 
+                  "AtomAngle(TargetAtom_1, TargetAtom_2, TargetAtom_3, p=(False, False, False))",
+                  "HighSymmPoint(type='hex')"
+                  "BZanalysis(self, type='hex')"
+                  )
     for name in methodList:
         pw(f"    {name}") 
     print("=====") 
@@ -40,6 +45,8 @@ class POSCARRead():
         pw("Lattice Constant:")
         print(Constant_a1, Constant_a2, Constant_a3)
         print("---")
+
+        self.Volume = Struct.get_volume()
         
         AtomNum = len(Struct)
         AtomPos_Cart = Struct.get_positions()
@@ -126,19 +133,105 @@ class POSCARRead():
         
         return angle
 
+    def HighSymmPoint(self, type="hex"):
+        if type=="hex":
+            a=self.Constant_a1
+
+            self.G0=np.array([0, 0, 0])
+
+            self.M1=np.array([ 1/(  a*np.sqrt(3)), 0, 0])
+            self.M2=np.array([ 1/(2*a*np.sqrt(3)), 1/(2*a), 0])
+            self.M3=np.array([-1/(2*a*np.sqrt(3)), 1/(2*a), 0])
+
+            self.K1=np.array([ 1/(a*np.sqrt(3)), 1/(3*a), 0])
+            self.K2=np.array([0, (2*np.pi)/(3*a), 0])
+            self.K3=np.array([-1/(a*np.sqrt(3)), 1/(3*a), 0])
+        elif type=="stp":
+            self.G = np.array([0.0, 0.0, 0.0])
+            self.Z = np.array([0.0, 0.0, 0.5])
+            self.M = np.array([0.5, 0.5, 0.0])
+            self.A = np.array([0.5, 0.5, 0.5])
+            self.R = np.array([0.0, 0.5, 0.5])
+            self.X = np.array([0.0, 0.5, 0.0])
+        else:
+            print("Undefined")
+
+    def BZanalysis(self, type="hex"):
+        Vector_a1, Vector_a2, Vector_a3 = self.Vector_a1, self.Vector_a2, self.Vector_a3
+        Volume = self.Volume
+
+        Vector_b1 = np.cross(Vector_a2, Vector_a3)/Volume
+        Vector_b2 = np.cross(Vector_a3, Vector_a1)/Volume
+        Vector_b3 = np.cross(Vector_a1, Vector_a2)/Volume
+        if type=="hex":
+            G0=np.array([self.G0@Vector_b1, self.G0@Vector_b2, self.G0@Vector_b3])
+
+            M1=np.array([self.M1@Vector_b1, self.M1@Vector_b2, self.M1@Vector_b3])
+            M2=np.array([self.M2@Vector_b1, self.M2@Vector_b2, self.M2@Vector_b3])
+            M3=np.array([self.M3@Vector_b1, self.M3@Vector_b2, self.M3@Vector_b3])
+
+            K1=np.array([self.K1@Vector_b1, self.K1@Vector_b2, self.K1@Vector_b3])
+            K2=np.array([self.K2@Vector_b1, self.K2@Vector_b2, self.K2@Vector_b3])
+            K3=np.array([self.K3@Vector_b1, self.K3@Vector_b2, self.K3@Vector_b3])
+
+            hsp_array = np.array([[G0, np.zeros_like(G0), np.zeros_like(G0)], 
+                                  [M1, M2, M3], 
+                                  [K1, K2, K3]
+                                  ])
+            print("G-M-K")
+
+        elif type=="stp":
+            G0 = np.array([self.G0@Vector_b1, self.G0@Vector_b2, self.G0@Vector_b3])
+            
+            Z1 = np.array([self.Z1@Vector_b1, self.Z1@Vector_b2, self.Z1@Vector_b3])
+            Z2 = np.array([self.Z2@Vector_b1, self.Z2@Vector_b2, self.Z2@Vector_b3])
+            
+            M1 = np.array([self.M1@Vector_b1, self.M1@Vector_b2, self.M1@Vector_b3])
+            M2 = np.array([self.M2@Vector_b1, self.M2@Vector_b2, self.M2@Vector_b3])
+            M3 = np.array([self.M3@Vector_b1, self.M3@Vector_b2, self.M3@Vector_b3])
+            
+            A1 = np.array([self.A1@Vector_b1, self.A1@Vector_b2, self.A1@Vector_b3])
+            A2 = np.array([self.A2@Vector_b1, self.A2@Vector_b2, self.A2@Vector_b3])
+            A3 = np.array([self.A3@Vector_b1, self.A3@Vector_b2, self.A3@Vector_b3])
+            
+            R1 = np.array([self.R1@Vector_b1, self.R1@Vector_b2, self.R1@Vector_b3])
+            R2 = np.array([self.R2@Vector_b1, self.R2@Vector_b2, self.R2@Vector_b3])
+            R3 = np.array([self.R3@Vector_b1, self.R3@Vector_b2, self.R3@Vector_b3])
+            
+            X1 = np.array([self.X1@Vector_b1, self.X1@Vector_b2, self.X1@Vector_b3])
+            X2 = np.array([self.X2@Vector_b1, self.X2@Vector_b2, self.X2@Vector_b3])
+            X3 = np.array([self.X3@Vector_b1, self.X3@Vector_b2, self.X3@Vector_b3])
+
+            # 組合陣列，若只有兩個等價點 (如 Z1, Z2) 則第三個用 np.zeros_like 補齊
+            hsp_array = np.array([
+                [G0, np.zeros_like(G0), np.zeros_like(G0)], 
+                [Z1, Z2, np.zeros_like(Z1)],
+                [M1, M2, M3],
+                [A1, A2, A3],
+                [R1, R2, R3],
+                [X1, X2, X3]
+            ])
+            
+            print("G-Z-M-A-R-X")
+
+        else:
+            print("Undefined")
+
+        return hsp_array
+
 # ===========================================
 def _Info_POSCAREdit():
     print("=====")
     print("We have the following methods:")
-    methodList = ("SetVacCen",
-                  "Centered",
-                  "SuperCell",
-                  "TF_repeat",
-                  "LatticeStrain",
-                  "LatticeSet",
-                  "HeteroStructure",
-                  "WritePOSCAR",
-                  "Write_Atom_xyz"
+    methodList = ("SetVacCen(Vac=15.0, axis=2)",
+                  "Centered(axis=2)",
+                  "SuperCell(repeatCell:tuple)",
+                  "TF_repeat(thickness:float, vdw:float, N=2)",
+                  "LatticeStrain(StrainMatrix:tuple, atomScale=True)",
+                  "LatticeSet(LatticeMatrix:np.array, atomScale=False)",
+                  "HeteroStructure(top_path, vdw=3.20, Vac=15.0)",
+                  "WritePOSCAR(name)",
+                  "Write_Atom_xyz(Path, r, theta, phi)"
                     )
     for name in methodList:
         pw(f"    {name}") 
