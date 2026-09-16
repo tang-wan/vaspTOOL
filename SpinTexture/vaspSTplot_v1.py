@@ -19,7 +19,7 @@ class Project_vaspkitSTplot():
 class procarSTplot():
     def __init__(self, FilePath:str, fermiEnergy=0, PROCARtype='vasp'):
         
-        self.parser   = ppr.io.Parser(code=PROCARtype, dir=FilePath)
+        self.parser   = ppr.io.Parser(code=PROCARtype, dirpath=FilePath)
 
         self.BandData    = self.parser.ebs.bands[:,:,0]-fermiEnergy
         self.kpointsData = self.parser.ebs.kpoints_cartesian
