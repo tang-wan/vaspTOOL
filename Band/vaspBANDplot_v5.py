@@ -31,21 +31,54 @@ def _Info_():
 # >>>>>>>>>> <<<<<<<<<< #
 
 class procarBNADplot():
-    def __init__(self, FilePath:str, fermiEnergy=0, PROCARtype='vasp'):
-
+    def __init__(self, FilePath:str, fermiEnergy=0, PROCARtype='vasp', spin_mode='all'):
+        """
+        spin_mode: 'all', 'up', or 'down'. Determines which spins to process/plot for collinear calculations.
+        """
         print(">>>>> pyprocar verision <<<<<")
         print(ppr.__version__)
         print(">>>>> =============== <<<<<")
         print()
         
         self.parser   = ppr.io.Parser(code=PROCARtype, dirpath=FilePath)
-        self.bandData = self.parser.ebs.bands[:,:,0]-fermiEnergy
+        print(np.shape(self.parser.ebs.bands))
+        self.spin_mode = spin_mode.lower()
+                
+        # Get the shape of raw band data (nkpoints, nbands, nspins)
+        raw_bands = self.parser.ebs.bands
+        n_spins = raw_bands.shape[2]
+        
+        if n_spins == 1:
+            # Handle SOC or non-spin-polarized (Non-collinear or Non-spin-polarized)
+            self.bandData = raw_bands[:, :, 0] - fermiEnergy
+            self.nband = self.parser.ebs.nbands
+        elif n_spins == 2:
+            # Handle Collinear (CL) spin-polarized:
+            # raw_bands[:, :, 0] is Spin Up
+            # raw_bands[:, :, 1] is Spin Down
+            spin_up = raw_bands[:, :, 0] - fermiEnergy
+            spin_down = raw_bands[:, :, 1] - fermiEnergy
+            
+            if self.spin_mode == 'up':
+                self.bandData = spin_up
+                self.nband = self.parser.ebs.nbands
+            elif self.spin_mode == 'dn':
+                self.bandData = spin_down
+                self.nband = self.parser.ebs.nbands
+            else:
+                # We concatenate Spin Down bands after Spin Up, resulting in shape (nkpoints, nbands * 2)
+                # Concatenate along axis=1 (nbands)
+                self.bandData = np.concatenate((spin_up, spin_down), axis=1)
+                # Since both spins are concatenated, total number of bands is doubled
+                self.nband = self.parser.ebs.nbands * 2
+        else:
+            raise ValueError(f"Unexpected spin dimension: {n_spins}")
+
         self.kpoints  = self.parser.ebs.kpoints_cartesian
 
         self.kpathPos = self.parser.ebs.kpath.tick_positions
         self.kpathLab = self.parser.ebs.kpath.tick_names
 
-        self.nband   = self.parser.ebs.nbands
         self.nkpoint = self.parser.ebs.nkpoints
         self.table = """
 +-------+-----+------+------+------+------+------+------+------+------+
@@ -119,11 +152,11 @@ class procarBNADplot():
 ## By Gemini
     def Edit_interpolation_1DBand(self, multiplier=1):
         """
-        multiplier: 放大倍率，決定資料密集度要增加幾倍
+        multiplier: Magnification factor, determines how much the data density increases
         """
         self.interp_multiplier = multiplier
         
-        # 確保基準的 kpathData 已經被建立
+        # Ensure the baseline kpathData has been established
         if not hasattr(self, 'kpathData'):
             self.Read_AllData_Band()
             
@@ -134,7 +167,7 @@ class procarBNADplot():
         kpath = self.kpathData
         bandData = np.transpose(self.bandData) # shape: (bands, kpoints)
         
-        # 尋找高對稱點造成的斷點 (X軸重複處)，以此為界切分資料
+        # Find breakpoints caused by high-symmetry points (duplicate X-axis values) to split data
         duplicate_indices = np.where(np.diff(kpath) == 0)[0] + 1
         
         x_segments = np.split(kpath, duplicate_indices)
@@ -148,17 +181,17 @@ class procarBNADplot():
                 new_y_list.append(y_seg)
                 continue
             
-            # 針對每一小段生成更密集的 X 座標
+            # Generate denser X coordinates for each segment
             new_x = np.linspace(x_seg[0], x_seg[-1], len(x_seg) * multiplier)
             
-            # 使用三次樣條內插 (cubic)
+            # Use cubic spline interpolation
             f = interp1d(x_seg, y_seg, kind='cubic', axis=1)
             new_y = f(new_x)
             
             new_x_list.append(new_x)
             new_y_list.append(new_y)
             
-        # 重新將切段的資料拼接起來
+        # Re-concatenate the segmented data
         self.new_kpathData = np.concatenate(new_x_list)
         self.new_bandData = np.concatenate(new_y_list, axis=1)
         
@@ -170,7 +203,7 @@ class procarBNADplot():
 # ==========
 ## By Gemini
     def _interpolate_1D_projectData(self, projData_1D):
-        # 如果使用者沒有呼叫過內插功能，就直接回傳原始資料
+        # Directly return original data if the user has not called the interpolation function
         if not hasattr(self, 'new_kpathData'):
             return projData_1D
             
@@ -179,7 +212,7 @@ class procarBNADplot():
         
         x_segments = np.split(kpath, duplicate_indices)
         
-        # ---> 【修改這裡】將 axis=1 改為 axis=-1，確保永遠切分 kpoints 維度 <---
+        # ---> [Modified here] Change axis=1 to axis=-1 to ensure kpoints dimension is always split <---
         y_segments = np.split(projData_1D, duplicate_indices, axis=-1)
         
         new_y_list = []
@@ -190,13 +223,13 @@ class procarBNADplot():
                 
             new_x = np.linspace(x_seg[0], x_seg[-1], len(x_seg) * self.interp_multiplier)
             
-            # ---> 【修改這裡】將 axis=1 改為 axis=-1 <---
+            # ---> [Modified here] Change axis=1 to axis=-1 <---
             f = interp1d(x_seg, y_seg, kind='cubic', axis=-1)
             new_y = f(new_x)
             
             new_y_list.append(new_y)
             
-        # ---> 【修改這裡】將 axis=1 改為 axis=-1 <---
+        # ---> [Modified here] Change axis=1 to axis=-1 <---
         return np.concatenate(new_y_list, axis=-1)
 
 # ==========    
@@ -229,9 +262,22 @@ class procarBNADplot():
 
 # ==========    
     def Read_SpinData_projectionData(self, spinList=(0,)):
-        spinData = self.parser.ebs.ebs_sum(atoms=None, orbitals=None, spins=spinList)
+        n_spins = self.parser.ebs.bands.shape[2]
+                
+        if n_spins == 1:
+            spinData = self.parser.ebs.ebs_sum(atoms=None, orbitals=None, spins=spinList)
+        elif n_spins == 2:
+            spinData_up = self.parser.ebs.ebs_sum(atoms=None, orbitals=None, spins=None)[:,:,0]
+            spinData_down = self.parser.ebs.ebs_sum(atoms=None, orbitals=None, spins=None)[:,:,1]*(-1)
+            
+            if self.spin_mode == 'up':
+                spinData = spinData_up
+            elif self.spin_mode == 'down':
+                spinData = spinData_down
+            else:
+                spinData = np.concatenate((spinData_up, spinData_down), axis=1)
+
         spinData = np.transpose(spinData)
-        
         spinData = self._interpolate_1D_projectData(spinData)
         
         kwargs_spin = self.kwargs_seismic
@@ -239,9 +285,23 @@ class procarBNADplot():
 
 # ==========    
     def Read_OrbitalData_projectionData(self, orbitalList=None, table=0):
-        orbitalData = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitalList, spins=(0,))
-        orbitalData = np.transpose(orbitalData)
 
+        n_spins = self.parser.ebs.bands.shape[2]
+                
+        if n_spins == 1:
+            orbitalData = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitalList, spins=(0,))
+        elif n_spins == 2:
+            orbitalData_up = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitalList, spins=None)[:,:,0]
+            orbitalData_down = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitalList, spins=None)[:,:,1]
+            
+            if self.spin_mode == 'up':
+                orbitalData = orbitalData_up
+            elif self.spin_mode == 'down':
+                orbitalData = orbitalData_down
+            else:
+                orbitalData = np.concatenate((orbitalData_up, orbitalData_down), axis=1)
+
+        orbitalData = np.transpose(orbitalData)
         orbitalData = self._interpolate_1D_projectData(orbitalData)
 
         kwargs_orbital = self.kwargs_blue
@@ -251,9 +311,22 @@ class procarBNADplot():
 
 # ==========    
     def Read_AtomData_projectionData(self, atomList=None):
-        atomData = self.parser.ebs.ebs_sum(atoms=atomList, orbitals=None, spins=(0,))
-        atomData = np.transpose(atomData)
+        n_spins = self.parser.ebs.bands.shape[2]
+                
+        if n_spins == 1:
+            atomData = self.parser.ebs.ebs_sum(atoms=atomList, orbitals=None, spins=(0,))
+        elif n_spins == 2:
+            atomData_up = self.parser.ebs.ebs_sum(atoms=atomList, orbitals=None, spins=None)[:,:,0]
+            atomData_down = self.parser.ebs.ebs_sum(atoms=atomList, orbitals=None, spins=None)[:,:,1]
+            
+            if self.spin_mode == 'up':
+                atomData = atomData_up
+            elif self.spin_mode == 'down':
+                atomData = atomData_down
+            else:
+                atomData = np.concatenate((atomData_up, atomData_down), axis=1)
 
+        atomData = np.transpose(atomData)
         atomData = self._interpolate_1D_projectData(atomData)
 
         kwargs_atom = self.kwargs_blue
@@ -261,8 +334,27 @@ class procarBNADplot():
 
 # ==========    
     def Read_AtomCompData_projectionData(self, atomList1:list, atomList2:list, type="1-2"):
-        atomData1 = self.parser.ebs.ebs_sum(atoms=atomList1, orbitals=None, spins=(0,))
-        atomData2 = self.parser.ebs.ebs_sum(atoms=atomList2, orbitals=None, spins=(0,))
+        n_spins = self.parser.ebs.bands.shape[2]
+                
+        # Read data of Atom1 and Atom2 respectively, and handle dimensionality logic
+        if n_spins == 1:
+            atomData1 = self.parser.ebs.ebs_sum(atoms=atomList1, orbitals=None, spins=(0,))
+            atomData2 = self.parser.ebs.ebs_sum(atoms=atomList2, orbitals=None, spins=(0,))
+        elif n_spins == 2:
+            atomData1_up = self.parser.ebs.ebs_sum(atoms=atomList1, orbitals=None, spins=None)[:,:,0]
+            atomData1_down = self.parser.ebs.ebs_sum(atoms=atomList1, orbitals=None, spins=None)[:,:,1]
+            atomData2_up = self.parser.ebs.ebs_sum(atoms=atomList2, orbitals=None, spins=None)[:,:,0]
+            atomData2_down = self.parser.ebs.ebs_sum(atoms=atomList2, orbitals=None, spins=None)[:,:,1]
+            
+            if self.spin_mode == 'up':
+                atomData1 = atomData1_up
+                atomData2 = atomData2_up
+            elif self.spin_mode == 'down':
+                atomData1 = atomData1_down
+                atomData2 = atomData2_down
+            else:
+                atomData1 = np.concatenate((atomData1_up, atomData1_down), axis=1)
+                atomData2 = np.concatenate((atomData2_up, atomData2_down), axis=1)
         
         if type == "1-2":
             atomData = atomData1 - atomData2
@@ -280,8 +372,28 @@ class procarBNADplot():
 
 # ==========  
     def Read_OrbitalCompData_projectionData(self, orbitList1:list, orbitList2:list, type="1-2"):
-        orbitalData1 = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitList1, spins=(0,))
-        orbitalData2 = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitList2, spins=(0,))
+
+        n_spins = self.parser.ebs.bands.shape[2]
+                        
+        # Read data of Orbit1 and Orbit2 respectively, and handle dimensionality logic
+        if n_spins == 1:
+            orbitalData1 = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitList1, spins=(0,))
+            orbitalData2 = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitList2, spins=(0,))
+        elif n_spins == 2:
+            orbitalData1_up = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitList1, spins=None)[:,:,0]
+            orbitalData1_down = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitList1, spins=None)[:,:,1]
+            orbitalData2_up = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitList2, spins=None)[:,:,0]
+            orbitalData2_down = self.parser.ebs.ebs_sum(atoms=None, orbitals=orbitList2, spins=None)[:,:,1]
+            
+            if self.spin_mode == 'up':
+                orbitalData1 = orbitalData1_up
+                orbitalData2 = orbitalData2_up
+            elif self.spin_mode == 'down':
+                orbitalData1 = orbitalData1_down
+                orbitalData2 = orbitalData2_down
+            else:
+                orbitalData1 = np.concatenate((orbitalData1_up, orbitalData1_down), axis=1)
+                orbitalData2 = np.concatenate((orbitalData2_up, orbitalData2_down), axis=1)
         
         if type == "1-2":
             orbitalData = orbitalData1 - orbitalData2
@@ -300,8 +412,23 @@ class procarBNADplot():
 # ==========
     def Read_Custom_projectionData(self, atomList=None, orbitalList=None, spinList=(0,)):
         projData = self.parser.ebs.ebs_sum(atoms=atomList, orbitals=orbitalList, spins=spinList)
+        n_spins = self.parser.ebs.bands.shape[2]
+                        
+        if n_spins == 1:
+            projData = self.parser.ebs.ebs_sum(atoms=atomList, orbitals=orbitalList, spins=spinList)
+        elif n_spins == 2:
+            
+            projData_up = self.parser.ebs.ebs_sum(atoms=atomList, orbitals=orbitalList, spins=None)[:,:,0]
+            projData_down = self.parser.ebs.ebs_sum(atoms=atomList, orbitals=orbitalList, spins=None)[:,:,1]
+            
+            if self.spin_mode == 'up':
+                projData = projData_up
+            elif self.spin_mode == 'down':
+                projData = projData_down
+            else:
+                projData = np.concatenate((projData_up, projData_down), axis=1)
+
         projData = np.transpose(projData)
-        
         projData = self._interpolate_1D_projectData(projData)
 
         # Call parameter dynamically
